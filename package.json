@@ -1,0 +1,19 @@
+{
+  "name": "outline",
+  "version": "1.0.0",
+  "description": "Create an outline for any text file for use with text editors",
+  "main": "index.js",
+  "scripts": {
+    "test": "TODO"
+  },
+  "repository": {
+    "type": "git",
+    "url": "TODO"
+  },
+  "keywords": [
+    "test", "outline", "vim", "quickfix", "ctags"
+  ],
+  "author": "Nils Boysen",
+  "license": "MIT",
+  "bin": "index.js"
+}
