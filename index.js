@@ -1,217 +1,61 @@
-#!/usr/bin/env node
+let INFO = DEBUG = console.error
 
-// let INFO = DEBUG = console.log
-const INFO = function() {}
-const DEBUG = INFO
+const globalConfig = require(`./config`)
 
-const fs = require(`fs`)
-let filename = process.argv[2]
-let filetype = process.argv[3]
+module.exports = format
 
-if (!filename) {
-  filename = `/usr/share/nvim/runtime/doc/help.txt`
-}
+function format(filename, data, filetype) {
+  let config
 
-const str = fs.readFileSync(filename).toString()
+  if (!filetype && filename) {
+    for (filetype of Object.keys(globalConfig)) {
+      const filetypeConfig = globalConfig[filetype]
 
-const globalConfig = {
-  helpxx: {
-    filenameMatch: /.*vim.*\.txt$/i
-    , tokens: [
-      {
-        type: `header`
-        , re: /(={2,}\n)(.+)\n/
-        , wanted: [2]
+      if (filename.match(filetypeConfig.filenameMatch)) {
+        break
       }
-      , {
-        type: `header2`
-
-        // re: '(\n*)(^[^ \t].+?) ~$',
-        // re: /^([^\\n].+)(\\*\\w+\\*) ~$/igm,
-        , re: /^(.+) ~$/igm
-        , wanted: [1]
-      }
-    ]
-  }
-  , text: {
-    filenameMatch: /\.(txt|text)$/i
-    , tokens: [
-      {
-        type: `header`
-
-        , re: /^([=#/'"-]{3,}\s+)(.+?)[\ =#/'"-]*$/gmi
-
-        // , re: /^([=#/'"-]{2,2})([=#/'"-]{0,})(\s+)(.+?)((\s)[\ =#/'"-])*$/gmi
-        , wanted: [2]
-      }
-      , {
-        type: `header2`
-
-        , re: /^([=#/'"-]{2,2}\s+)(.+?)[\ =#/'"-]*$/gmi
-        , wanted: [2]
-        , transform(match) {
-          return match.replace(/^/, ` - `)
-        }
-      }
-    , ]
-  }
-  , man: {
-    filenameMatch: /\.man$/i
-    , tokens: [
-      {
-        type: `header`
-        , re: /^([A-Z ]+)$/gm
-        , wanted: [1]
-      }
-    ]
-  }
-  , markdown: {
-    filenameMatch: /\.md$/i
-    , tokens: [
-      {
-        type: `header`
-        , re: /^(#)(#*.+)$/gm
-        , wanted: [2]
-      }
-    ]
-  }
-  , javascript: {
-    filenameMatch: /\.js$/i
-    , tokens: [
-      {
-        type: `class`
-        , re: /(class )(\w+)/gm
-        , wanted: [2]
-      }
-      , {
-        type: `exports`
-        , re: /(module.exports[\s=]+)(\w+)/gm
-        , wanted: [2]
-      }
-      , {
-        type: `function`
-        , re: /^function(\s*)(\w+)([\s]*)(\([^\n]*\)\s*\{)/gm
-        , wanted: [2]
-      }
-      , {
-        type: `function2`
-        , re: /(\w+)(\s*:+\s*)(function)/gm
-        , wanted: [1]
-      }
-    , ]
-  }
-  , perl: {
-    filenameMatch: /\.p(l|m)$/i
-    , tokens: [
-      {
-        type: `function`
-        , re: /(sub)([\s]+)(\w+)/gm
-        , wanted: [3]
-      }
-    , ]
-  }
-  , vim: {
-    filenameMatch: /\.vim$/i
-    , tokens: [
-      {
-        type: `function`
-        , re: /(function)([\!\s]*)([#\w\:]+)(\s*\()/gm
-        , wanted: [3]
-      }
-    , {
-        example: `"### header ####`
-        , type: `header`
-        , re: /^("### )(.+)( #*)$/gm
-        , wanted: [2]
-    }
-    ]
-  }
-  , java: {
-    filenameMatch: /\.java$/i
-    , tokens: [
-      {
-        type: `class`
-        , re: /(class)([\s]+)([\w]+)/gm
-        , wanted: [3]
-      }
-      , {
-        type: `method`
-        , re: /(public|private)((\s*\w*)(\s+))*((?!(s|g)et\w+)[\w]+)(\s*\()/gm
-        , wanted: [5]
-      }
-    , ]
-  }
-  , yaml: {
-    filenameMatch: /\.(yaml|swagger)$/i
-    , tokens: [
-      {
-        type: `header`
-        , re: /^(\w+):/gm
-        , wanted: [1]
-      }
-
-      // , {
-      //   type: `header2`
-      //   , re: /^(\s+\w+):/gm
-      //   , wanted: [1]
-      // }
-    ]
-  }
-  , snippets: {
-    filenameMatch: /\.(snippets)$/i
-    , tokens: [
-      {
-        type: `header`
-        , re: /^(snippet\s+)(.+$)/gm
-        , wanted: [2]
-      }
-    ]
-  }
-}
-
-let config
-
-if (! filetype) {
-  for (filetype of Object.keys(globalConfig)) {
-    const filetypeConfig = globalConfig[filetype]
-
-    if (filename.match(filetypeConfig.filenameMatch)) {
-      break
     }
   }
+
+  if (!globalConfig[filetype]) {
+    filetype = `text`
+  }
+
+  DEBUG(`Using filetype: ${filetype}`)
+
+  config = globalConfig[filetype]
+  config.filetype = filetype
+
+  if (!config) {
+    INFO(`Filetype not recognized - using text`)
+    config = globalConfig.text
+  } else {
+    DEBUG(`Using config:`, config)
+  }
+  INFO(`Using filetype: ${config.filetype}`)
+
+  let result = []
+  for (const token of config.tokens) {
+    result.push(...findMatches(filename, data, token))
+  }
+
+  return result
 }
 
-if (!globalConfig[filetype]) {
-  filetype = `text`
-}
-
-config = globalConfig[filetype]
-config.filetype = filetype
-
-if (!config) {
-  INFO(`Filetype not recognized - using text`)
-  config = globalConfig.text
-} else {
-  DEBUG(`Using config:`, config)
-}
-INFO(`Using filetype: ${config.filetype}`)
-
-for (const token of config.tokens) {
-  findMatches(token)
-}
-
-function findMatches(token) {
+function findMatches(filename, data, token) {
   // TODO
   let lastRowStartOffset = 0
   let row = 1
-  const newlines = findNewlines()
+  const newlines = findNewlines(data)
   const re = token.re
   const wantedMatches = new Set(token.wanted)
 
-// note: match.index is the same for all capture groups even non capturing (?:)
+// Note: match.index is the same for all capture groups even non capturing (?:)
   let match
 
-  while ((match = re.exec(str)) !== null) {
+  let result = []
+
+  while ((match = re.exec(data)) !== null) {
   // DEBUG('Match')
   // DEBUG(match)
     let index = match.index
@@ -222,7 +66,7 @@ function findMatches(token) {
 
   // process.exit(1)
 
-    let wantedMatch = ``
+    let matches = []
     let i
 
     for (i = 1; i <= match.length; i++) {
@@ -235,21 +79,17 @@ function findMatches(token) {
         continue
       }
       if (wantedMatches.has(i) && matchPart.match(/\w/)) {
-        if (wantedMatch) {
-          wantedMatch += ` `
-        }
-        wantedMatch += `${matchPart}`
-
-        // wantedMatch = matchPart
+        matches.push(matchPart)
       }
       index = index + matchPart.length
     }
 
+    let wantedMatch
     if (token.transform != undefined) {
-      wantedMatch = token.transform(wantedMatch)
+      wantedMatch = token.transform(matches)
+    } else {
+      wantedMatch = matches.join(`#####`)
     }
-
-    // wantedMatch += ` (${token.type})`
 
     while (newlines[0] < index) {
       lastRowStartOffset = newlines.shift()
@@ -257,18 +97,24 @@ function findMatches(token) {
     }
     const col = index - lastRowStartOffset
 
-    console.log([filename, row, col, wantedMatch].join(`:`))
+    if(!filename) {
+      result.push(wantedMatch)
+    } else {
+      result.push([filename, row, col, wantedMatch].join(`:`))
+    }
   }
+
+  return result
 }
 
 // TODO maybe use split or similar
-function findNewlines() {
+function findNewlines(data) {
   const re = /\n/gm
   const newlines = []
 
   let match
 
-  while ((match = re.exec(str)) !== null) {
+  while ((match = re.exec(data)) !== null) {
     newlines.push(match.index)
   }
   return newlines
