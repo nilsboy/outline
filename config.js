@@ -12,7 +12,7 @@ module.exports = {
 
         // re: '(\n*)(^[^ \t].+?) ~$',
         // re: /^([^\\n].+)(\\*\\w+\\*) ~$/igm,
-        , re: /^(.+) ~$/igm
+        , re: /^(.+) ~$/gim
         , wanted: [1]
       }
     ]
@@ -22,22 +22,31 @@ module.exports = {
     , tokens: [
       {
         type: `header`
-
-        , re: /^([=#/'"-]{3,}\s+)(.+?)[\ =#/'"-]*$/gmi
-
-        // , re: /^([=#/'"-]{2,2})([=#/'"-]{0,})(\s+)(.+?)((\s)[\ =#/'"-])*$/gmi
-        , wanted: [2]
-      }
-      , {
-        type: `header2`
-
-        , re: /^([=#/'"-]{2,2}\s+)(.+?)[\ =#/'"-]*$/gmi
-        , wanted: [2]
+        , re: /^(###*.+)$/gm
+        , wanted: [1]
         , transform(matches) {
-            return ` - ` + matches.join(`:`)
+          return matches.join().replace(/^###/, ` -`).replace(/^##/, ``)
         }
       }
-    , ]
+
+      // {
+      //   type: `header`
+
+      //   , re: /^([=#/'"-]{3,}\s+)(.+?)[\ =#/'"-]*$/gmi
+
+      //   // , re: /^([=#/'"-]{2,2})([=#/'"-]{0,})(\s+)(.+?)((\s)[\ =#/'"-])*$/gmi
+      //   , wanted: [2]
+      // }
+      // , {
+      //   type: `header2`
+
+      //   , re: /^([=#/'"-]{2,2}\s+)(.+?)[\ =#/'"-]*$/gmi
+      //   , wanted: [2]
+      //   , transform(matches) {
+      //       return ` - ` + matches.join(`:`)
+      //   }
+      // }
+    ]
   }
   , man: {
     filenameMatch: /\.man$/i
@@ -64,6 +73,7 @@ module.exports = {
     , tokens: [
       {
         type: `testError`
+
         // including stacktrace:
         // , re: /^(\s*at .+ \()(.+\/.+?)(\))$/gm
         // Javascript does not support look behind...
@@ -77,18 +87,19 @@ module.exports = {
         , re: /(\s+\d+\).+$\n\n)([\s\S]*?)(\s+at\s+.+\()(.+)(\))$/gm
         , wanted: [4]
         , transform(matches) {
-            return matches[0] + `:Test error`
+          return matches[0] + `:Test error`
         }
       }
       , {
-          type: `implementationError`
-          // TypeError: Cannot read property 'type' of undefined
-          //  at /home/nilsb/src/es-strip-semicolons/index.js:32:19
-          , re: /\s+\d+\)(.+?)\n(\s*)(.+?)\n(\s+at\s)(.+?)$/gm
-          , wanted: [3,5]
-          , transform(matches) {
-            return matches[1] + `:` + matches[0]
-          }
+        type: `implementationError`
+
+        // TypeError: Cannot read property 'type' of undefined
+        //  at /home/nilsb/src/es-strip-semicolons/index.js:32:19
+        , re: /\s+\d+\)(.+?)\n(\s*)(.+?)\n(\s+at\s)(.+?)$/gm
+        , wanted: [3, 5]
+        , transform(matches) {
+          return matches[1] + `:` + matches[0]
+        }
       }
     ]
   }
@@ -106,16 +117,40 @@ module.exports = {
         , wanted: [2]
       }
       , {
+        type: `export`
+        , re: /(export)(\s+)(default\s*)*(\(.*\)\s*=>)/gm
+        , wanted: [1]
+      }
+      , {
         type: `function`
-        , re: /^function(\s*)(\w+)([\s]*)(\([^\n]*\)\s*\{)/gm
-        , wanted: [2]
+        , re: /^(async\s*)*function(\s*)(\w+)([\s]*)(\([^\n]*\)\s*\{)/gm
+        , wanted: [3]
       }
       , {
         type: `function2`
         , re: /(\w+)(\s*:+\s*)(function)/gm
         , wanted: [1]
       }
-    , ]
+      , {
+        type: `function3`
+        , re: /(const|var|let)(\s+)(\w+)(.*=\>)/gm
+
+        // , re: /(const|var|let)(\s+)(\w+)(\s*=\s*\(.*\)\s*=\>\s*[\{\[]+)/gm
+        , wanted: [3]
+      }
+      , {
+        example: ` createLoggerFacade() {`
+        , type: `function_es6`
+        , re: /^\s*(\w+)\(.*?\)\s*\{/gm
+        , wanted: [1]
+      }
+
+      // , {
+      //   type: `const`
+      //   , re: /(const\s+)(\w+)/gm
+      //   , wanted: [2]
+      // }
+    ]
   }
   , perl: {
     filenameMatch: /\.p(l|m)$/i
@@ -125,25 +160,25 @@ module.exports = {
         , re: /(sub)([\s]+)(\w+)/gm
         , wanted: [3]
       }
-    , ]
+    ]
   }
   , vim: {
     filenameMatch: /\.vim$/i
     , tokens: [
       {
         type: `function`
-        , re: /(function)([\!\s]*)([#\w\:]+)(\s*\()/gm
-        , wanted: [3]
+        , re: /(function)([\!\s]*\s+)(<\w+>)*([#\w\:]+)(\s*\()/gm
+        , wanted: [4]
         , transform(matches) {
-            return matches.join(`:`) + ` - `
+          return matches.join(`:`) + ` - `
         }
       }
-    , {
+      , {
         example: `"### header ####`
         , type: `header`
         , re: /^("### )(.+)([\s#]*)$/gm
         , wanted: [2]
-    }
+      }
     ]
   }
   , java: {
@@ -159,7 +194,7 @@ module.exports = {
         , re: /(public|private)((\s*\w*)(\s+))*((?!(s|g)et\w+)[\w]+)(\s*\()/gm
         , wanted: [5]
       }
-    , ]
+    ]
   }
   , yaml: {
     filenameMatch: /\.(yaml|swagger)$/i
@@ -188,4 +223,3 @@ module.exports = {
     ]
   }
 }
-
