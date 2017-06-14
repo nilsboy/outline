@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "Create an outline for any text file for use with text editors",
     "main": "index.js",
+    "bin": "bin/outline",
     "scripts": {
         "test": "TODO"
     },
@@ -19,9 +20,9 @@
     ],
     "author": "Nils Boysen",
     "license": "MIT",
-    "bin": "bin/outline",
     "dependencies": {
         "conf-simple": "github:nilsboy/js-conf-simple",
-        "get-stdin": "^5.0.1"
+        "get-stdin": "^5.0.1",
+        "harmonize": "^2.0.0"
     }
 }

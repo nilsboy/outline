@@ -22,7 +22,7 @@ module.exports = {
     , tokens: [
       {
         type: `header`
-        , re: /^(###*.+)$/gm
+        , re: /^([#-]{3,}.+)$/gm
         , wanted: [1]
         , transform(matches) {
           return matches.join().replace(/^###/, ` -`).replace(/^##/, ``)
@@ -55,6 +55,15 @@ module.exports = {
         type: `header`
         , re: /^([A-Z ]+)$/gm
         , wanted: [1]
+      }
+      ,
+      {
+        type: `header2`
+        , re: /^([#-]{3,}.+?)[#-]*$/gm
+        , wanted: [1]
+        , transform(matches) {
+          return matches.join().replace(/^[#-]{3}/, ` -`).replace(/^##/, ``)
+        }
       }
     ]
   }
