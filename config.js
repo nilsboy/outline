@@ -131,6 +131,22 @@ module.exports = {
         , wanted: [1]
       }
       , {
+        type: `mocha-describe`
+        , re: /^\s*describe\([`'"]*(.+?)[`'"]*,/gm
+        , wanted: [1]
+        , transform(matches) {
+          return `# ` + matches.join(``)
+        }
+      }
+      , {
+        type: `mocha-it`
+        , re: /^\s*it\([`'"]*(.+?)[`'"]*,/gm
+        , wanted: [1]
+        , transform(matches) {
+          return ` - ` + matches.join(``)
+        }
+      }
+      , {
         type: `function`
         , re: /^(async\s*)*function(\s*)(\w+)([\s]*)(\([^\n]*\)\s*\{)/gm
         , wanted: [3]
@@ -148,9 +164,15 @@ module.exports = {
         , wanted: [3]
       }
       , {
-        example: ` createLoggerFacade() {`
-        , type: `function_es6`
+        type: `function_es6`
+        , example: ` createLoggerFacade() {`
         , re: /^\s*(\w+)\(.*?\)\s*\{/gm
+        , wanted: [1]
+      }
+      , {
+        type: `function4`
+        , example: `Manager.prototype.register = function(model, name) { `
+        , re: /^\s*[\w\.]*?\.(\w+)\s*=\s*(function|Promise.method)/gm
         , wanted: [1]
       }
 
